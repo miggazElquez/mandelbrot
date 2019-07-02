@@ -32,12 +32,11 @@ def make_img1(val):
 		result.append([])
 		for val in y:
 			if not val:
-				result[-1].append([255,255,255])
-			else:
 				result[-1].append([0,0,0])
-	return np.array(result)
+			else:
+				result[-1].append([255,255,255])
+	array = np.array(result).astype(np.uint8)
+	return PIL.Image.fromarray(array)
 
-def show_mandelbrot(size,nb):
-	array = make_img1(mandelbrot(size,nb)).astype(np.uint8)
-	img = PIL.Image.fromarray(array)
-	img.show()
+def show(size,nb):
+	make_img1(mandelbrot(size,nb)).show()
