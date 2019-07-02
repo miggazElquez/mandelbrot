@@ -1,5 +1,6 @@
 import numpy as np
 import PIL.Image
+from color import color
 
 
 def divergence(c,nb_iteration):
@@ -31,14 +32,15 @@ def mandelbrot(shape,nb_iteration):
 	return result
 
 def make_img1(val):
+	coef = 5
 	result = []
 	for y in val:
 		result.append([])
 		for val in y:
-			if not val:
-				result[-1].append([0,0,0])
+			if val:
+				result[-1].append(color(val * coef))
 			else:
-				result[-1].append([255,255,255])
+				result[-1].append((0,0,0))
 	array = np.array(result).astype(np.uint8)
 	return PIL.Image.fromarray(array)
 
