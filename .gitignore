@@ -2,4 +2,3 @@
 __pycache__
 _pyxbld
 _mandelbrot.c
-*.png
