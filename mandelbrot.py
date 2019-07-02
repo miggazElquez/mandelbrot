@@ -6,10 +6,14 @@ def divergence(c,nb_iteration):
 	z = 0
 	for i in range(nb_iteration):
 		z = z**2 + c
-		if abs(z) >2:
+		if abs(z) > 2:
 			return i+1
 	return 0
 
+try:
+	from _mandelbrot import divergence
+except ImportError:
+	print("No cython version, the code will run slower")
 
 
 def mandelbrot(shape,nb_iteration):
