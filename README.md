@@ -13,7 +13,7 @@ Usage
 ----
 You can use this program in two way : generating picture, or exploring the set.
 
-###mode
+### mode
 
 If you want to use the interactive mode, just use `-i`, or `--interactive`.
 
@@ -21,7 +21,7 @@ If you prefer to generate one picture, you can specify the files to save it usin
 You can specify multiple files : `-f file.png -f file2.png`. We use Pillow, so you can save to all the format supported by Pillow.
 You can also show the picture, with `-s`.
 
-###generic options
+### generic options
 
 To specify the size of the picture, you can use `-x` and `-y`. The default is 500, 500 in interactive mode and 1000,1000 when you generate a picture.
 For example, if you want an interactive mode with a bigger window, you can use `mandelbrot.py -i -x 800 -y 800`.
