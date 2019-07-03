@@ -21,12 +21,14 @@ except ImportError:
 	print("No cython version, the code will run slower")
 
 
-def mandelbrot(shape,nb_iteration):
+def mandelbrot(shape,nb_iteration,zone=((-2,2),(-2,2))):
 	"""On passe la dimension de l'image (x,y) et le nombre d'itération"""
-	delta_x = 4/shape[0]
-	delta_y = 4/shape[1]
+	taille_x = zone[0][1] - zone[0][0]
+	taille_y = zone[1][1] - zone[1][0]
+	delta_x = taille_x / shape[0]
+	delta_y = taille_y / shape[1]
 	result = []
-	val = val_start = -2+2j
+	val = val_start = complex(zone[0][0],zone[1][1])
 	for y in range(shape[1]):
 		result.append([])
 		for x in range(shape[0]):
@@ -35,7 +37,7 @@ def mandelbrot(shape,nb_iteration):
 		val = val_start - complex(0,delta_y*(y+1))
 	return result
 
-def make_img(val,no_color):
+def make_img(val,no_color=False):
 	coef = 5
 	result = []
 	for y in val:
@@ -53,15 +55,15 @@ def make_img(val,no_color):
 
 def show(size,nb):
 	"""for use in an interactive session"""
-	make_img1(mandelbrot(size,nb)).show()
+	make_img(mandelbrot(size,nb)).show()
 
 def main():
 	parser = argparse.ArgumentParser()
 
 	parser.add_argument('-i','--interactive',help="launch an interactive session in pygame",action="store_true")
 
-	parser.add_argument("-x",help="number of pixels in x of the picture",type=int,default=1000)
-	parser.add_argument("-y",help="number of pixels in y of the picture",type=int,default=1000)
+	parser.add_argument("-x",help="number of pixels in x of the picture",type=int,default=-1)
+	parser.add_argument("-y",help="number of pixels in y of the picture",type=int,default=-1)
 	parser.add_argument("-n",help="number of iteration to determine if the series is divergent",type=int,default=400)
 
 	parser.add_argument('--no-color',help="Picture in black and white only",action="store_true")
@@ -71,6 +73,10 @@ def main():
 
 	args = parser.parse_args()
 	if not args.interactive:
+		if args.x == -1:
+			args.x = 1000
+		if args.y == -1:
+			args.y = 1000
 		if not args.files and not args.show:
 			parser.error("If you're not in interactive mode, you don't want to see the picture, and you don't save it to a file, why are you running this program ?")
 		valeur = mandelbrot((args.x,args.y),args.n)
@@ -79,6 +85,14 @@ def main():
 			image.save(file)
 		if args.show:
 			image.show()
+	else:
+		if args.x == -1:
+			args.x = 500
+		if args.y == -1:
+			args.y = 500
+
+		import interactive
+		interactive.main(args.x,args.y,args.n,args.no_color)
 
 if __name__ == '__main__':
 	main()
