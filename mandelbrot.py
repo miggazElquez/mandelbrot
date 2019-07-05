@@ -1,11 +1,13 @@
 import argparse
+from multiprocessing import Process, Queue
+import os
 
 import numpy as np
 import PIL.Image
 
 from color import color
 
-
+MULTI = True
 
 def divergence(c,nb_iteration):
 	z = 0
@@ -37,7 +39,8 @@ def mandelbrot(shape,nb_iteration,zone=((-2,2),(-2,2))):
 		val = val_start - complex(0,delta_y*(y+1))
 	return result
 
-def make_img(val,no_color=False):
+
+def valeurs_to_array(val,no_color=False):
 	coef = 5
 	result = []
 	for y in val:
@@ -51,19 +54,71 @@ def make_img(val,no_color=False):
 			else:
 				result[-1].append((0,0,0))
 	array = np.array(result).astype(np.uint8)
-	return PIL.Image.fromarray(array)
+	return array
+
+
+def make_img(shape,nb_iteration,zone=((-2,2),(-2,2)),no_color=False):
+	if MULTI:
+		x,y = shape
+		cpus = os.cpu_count()
+		chunk_size = x//cpus
+		last_chunk_size = x - chunk_size * (cpus-1)
+		(x_min,x_max),y_ = zone
+		delta_x = x_max - x_min
+		pixel_x = delta_x / x
+		chunk_size_value = chunk_size * pixel_x
+
+		result = Queue()
+		processes = []
+		for i in range(cpus-1):
+			zone_x = (i * chunk_size_value + x_min, (i+1) * chunk_size_value + x_min)
+			process = Process(target=_worker,args=
+				((chunk_size,y),
+				nb_iteration,
+				(zone_x,y_),
+				no_color,result,i
+				))
+			process.start()
+			processes.append(process)
+		last_zone = (cpus-1) * chunk_size_value + x_min, x_max
+		process = Process(target=_worker,
+			args=((last_chunk_size,y),
+			nb_iteration,
+			(last_zone,y_),
+			no_color,result,cpus-1
+			))
+		process.start()
+		processes.append(process)
+		vals = [result.get() for i in processes]
+		for process in processes:
+			process.join()
+		final_array = np.hstack([i[0] for i in sorted(vals,key = lambda i:i[1])])
+		return PIL.Image.fromarray(final_array)
+
+
+	else:
+		valeurs = mandelbrot(shape,nb_iteration,zone)
+		array = valeurs_to_array(valeurs,no_color)
+		return PIL.Image.fromarray(array)
+
+def _worker(shape,nb_iteration,zone,no_color,result,n):
+	valeurs = mandelbrot(shape,nb_iteration,zone)
+	array = valeurs_to_array(valeurs,no_color)
+	result.put((array,n))
+
+
 
 def show(size,nb):
 	"""for use in an interactive session"""
-	make_img(mandelbrot(size,nb)).show()
+	make_img(size,nb).show()
 
 def main():
 	parser = argparse.ArgumentParser()
 
 	parser.add_argument('-i','--interactive',help="launch an interactive session in pygame",action="store_true")
 
-	parser.add_argument("-x",help="number of pixels in x of the picture",type=int,default=-1)
-	parser.add_argument("-y",help="number of pixels in y of the picture",type=int,default=-1)
+	parser.add_argument("-x",help="number of pixels in x of the picture (-1 : default)",type=int,default=-1)
+	parser.add_argument("-y",help="number of pixels in y of the picture (-1 : default)",type=int,default=-1)
 	parser.add_argument("-n",help="number of iteration to determine if the series is divergent",type=int,default=400)
 
 	parser.add_argument('--no-color',help="Picture in black and white only",action="store_true")
@@ -79,8 +134,7 @@ def main():
 			args.y = 1000
 		if not args.files and not args.show:
 			parser.error("If you're not in interactive mode, you don't want to see the picture, and you don't save it to a file, why are you running this program ?")
-		valeur = mandelbrot((args.x,args.y),args.n)
-		image = make_img(valeur,args.no_color)
+		image = make_img((args.x,args.y),args.n,no_color=args.no_color)
 		for file in args.files:
 			image.save(file)
 		if args.show:

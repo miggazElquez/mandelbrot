@@ -1,11 +1,11 @@
+#! python -3.7-32
 import pygame
 from mandelbrot import mandelbrot, make_img
 
 
 
 def update_image(fen,x,y,n,no_color,size):
-	valeurs = mandelbrot((x,y),n,size)
-	image = make_img(valeurs,no_color)
+	image = make_img((x,y),n,size,no_color)
 	pygame_image = pygame.image.fromstring(image.tobytes(),(x,y),'RGB')
 	return pygame_image
 
@@ -44,14 +44,24 @@ def new_size(pos,shape,x_size,y_size,up=True):
 		return (x_min - delta_x/2, x_max + delta_x/2), (y_min - delta_y/2, y_max + delta_y/2)
 	
 
-
+def mouse_infos(pos,x,y,x_size,y_size):
+	x_min, x_max = x_size
+	y_min, y_max = y_size
+	delta_x = x_max - x_min
+	pixel_x = delta_x / x
+	delta_y = y_max - y_min
+	pixel_y = delta_y / y
+	x_m, y_m = pos
+	x_m = x_m * pixel_x + x_min
+	y_m = (y - y_m) * pixel_y + y_min	#les x vont en croissant, les y en décroissant (oui, j'ai Ctrl+c, Ctrl+v)
+	return _font.render(f"{x_m:e}, {y_m:e}",False,(0,0,0))
 
 
 
 def main(x=500,y=500,n=400,no_color=False):
 	pygame.init()
-	fen = pygame.display.set_mode((x,y))
-	pygame.key.set_repeat(500,30)
+	fen = pygame.display.set_mode((x+105,y+40))
+	pygame.key.set_repeat(500,15)
 
 	marqueur = pygame.Surface((20,20))
 	marqueur.fill((255,255,255))
@@ -60,6 +70,8 @@ def main(x=500,y=500,n=400,no_color=False):
 	pygame.draw.rect(marqueur,(0,0,0),(0,9,20,2))
 	marqueur_rect = marqueur.get_rect()
 
+	global _font
+	_font = pygame.font.Font(None,21)
 
 	continuer = True
 	x_size = [-2,2]
@@ -67,8 +79,8 @@ def main(x=500,y=500,n=400,no_color=False):
 	changed = True
 	pos = [0,0]
 
-	step_x = x//50
-	step_y = y//50
+	step_x = x//100
+	step_y = y//100
 	image = None
 
 	while continuer:
@@ -113,16 +125,33 @@ def main(x=500,y=500,n=400,no_color=False):
 					changed = True
 
 			if changed:
-				print("Updating...", end ="",flush=True)
 				image = update_image(fen,x,y,n,no_color,(x_size,y_size))
-				print('\b' * len("Updating..."),end="")
-				print(' ' * len("Updating..."),end="")
-				print('\b' * len("Updating..."),end="",flush=True)
+				texte = f"""\
+x :
+ {x_size[0]: e},
+ {x_size[1]: e}
+y :
+ {y_size[0]: e},
+ {y_size[1]: e}
+
+taille :
+ {x_size[1] - x_size[0]: e},
+ {y_size[1] - y_size[0]: e}
+"""
+				textes = [_font.render(line,True,(0,0,0)) for line in texte.split('\n')]
+				size_infos = pygame.Surface((105,21*len(textes)))
+				size_infos.fill((255,255,255))
+				size_infos.set_colorkey((255,255,255))
+				for ind, surf in enumerate(textes,start=1):
+					size_infos.blit(surf,(0,21*ind))
 				changed = False
 
+			fen.fill((255,255,255))
 			fen.blit(image,(0,0))
 			marqueur_rect.center = pos
 			fen.blit(marqueur,marqueur_rect)
+			fen.blit(mouse_infos(pos,x,y,x_size,y_size),(10,y+10))
+			fen.blit(size_infos,(x,0))
 
 			pygame.display.flip()
 
